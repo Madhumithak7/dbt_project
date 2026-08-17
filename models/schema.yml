@@ -1,0 +1,50 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: "Cleaned customer dimension - deduped, null scores coalesced to 0, names/countries title-cased via the custom title_case macro."
+    columns:
+      - name: customer_id
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_orders
+    description: "Cleaned, deduplicated order-grain staging model."
+    columns:
+      - name: order_id
+        tests:
+          - unique
+          - not_null
+      - name: order_status
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Delivered', 'Pending', 'Cancelled']
+
+  - name: stg_products
+    description: "Cleaned product dimension."
+    columns:
+      - name: product_id
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_sales
+    description: "Order-grain fact table. Incremental materialization. Cancelled orders excluded."
+    columns:
+      - name: order_id
+        tests:
+          - unique
+          - not_null
+      - name: revenue_tier
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['High', 'Medium', 'Low']
+      - name: customer_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('stg_customers')
+                field: customer_id
